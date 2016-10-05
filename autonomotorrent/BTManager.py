@@ -20,7 +20,7 @@ class BTManager (object):
         self.pieceManager = BTPieceManager(self)
         if len(self.metainfo.announce_list) > 0:
             self.bttrackerclient = BTTrackerClient(self)
-        else: 
+        else:
             raise Exception("Torrent needs at least one tracker")
         self.status = None
 
@@ -28,7 +28,7 @@ class BTManager (object):
         self.pieceManager.start()
 
         self.connectionManager.start()
-        
+
         self.downloadSpeedMonitor.start()
         self.uploadSpeedMonitor.start()
 
@@ -40,7 +40,7 @@ class BTManager (object):
         self.pieceManager.stop()
 
         self.connectionManager.stop()
-        
+
         self.downloadSpeedMonitor.stop()
         self.uploadSpeedMonitor.stop()
 

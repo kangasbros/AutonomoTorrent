@@ -6,7 +6,7 @@ import os
 import os
 from twisted.python import log
 from twisted.internet import reactor
-from twisted.internet import task 
+from twisted.internet import task
 
 from autonomotorrent.BTManager import BTManager
 from autonomotorrent.factory import BTServerFactories
@@ -33,10 +33,10 @@ class BTConfig(object):
             size = f['length']
             name = f['path']
             log.msg("File: {0} Size: {1}".format(name, size)) # TODO: Do we really need this?
-            
+
 class BTApp:
-    def __init__(self, save_dir=".", 
-                       listen_port=6881, 
+    def __init__(self, save_dir=".",
+                       listen_port=6881,
                        enable_DHT=False,
                        remote_debugging=False):
         """
@@ -62,7 +62,7 @@ class BTApp:
             dbg = twisted.manhole.telnet.ShellFactory()
             dbg.username = "admin"
             dbg.password = "admin"
-            dbg.namespace['app'] = self 
+            dbg.namespace['app'] = self
             reactor.listenTCP(9999, dbg)
 
     def add_torrent(self, config):
@@ -74,14 +74,14 @@ class BTApp:
             btm = BTManager(self, config)
             self.tasks[info_hash] = btm
             btm.startDownload()
-            return info_hash 
+            return info_hash
 
     def stop_torrent(self, key):
         info_hash = key
         if info_hash in self.tasks:
             btm = self.tasks[info_hash]
             btm.stopDownload()
-        
+
     def remove_torrent(self, key):
         info_hash = key
         if info_hash in self.tasks:
@@ -109,11 +109,11 @@ class BTApp:
                 "num_peers": num_connections["client"],
                 }
             try:
-                status["all"]["speed_up"] += status[pretty_hash]["speed_up"] 
-                status["all"]["speed_down"] += status[pretty_hash]["speed_down"] 
+                status["all"]["speed_up"] += status[pretty_hash]["speed_up"]
+                status["all"]["speed_down"] += status[pretty_hash]["speed_down"]
             except KeyError:
                 status["all"] = {
-                    "speed_up": status[pretty_hash]["speed_up"], 
+                    "speed_up": status[pretty_hash]["speed_up"],
                     "speed_down": status[pretty_hash]["speed_down"]
                     }
 

@@ -96,7 +96,7 @@ class BTFile:
     def close(self):
         if self.fd :
             self.fd.close()
-    
+
     def __getitem__(self, idx):
         return self.read(idx, 0, self.piece_len)
 
@@ -119,14 +119,14 @@ class BTFiles :
         if selectedFileIndex is None :
             selectedFileIndex = range(len(metainfo.files))
         selectedFileIndex.sort()
-        
+
         self.metainfo = metainfo
         self.saveDir = saveDir
         self.totalSize = metainfo.total_length
         self.pieceNum = metainfo.pieces_size
         self.pieceLength = metainfo.piece_length
         self.hashArray = metainfo.pieces_hash
-        
+
         self.files = []
         for i in selectedFileIndex :
             self.files.append(BTFile(metainfo, i, saveDir))
@@ -169,7 +169,7 @@ class BTFiles :
                 else:
                     _ds.append(d)
             return _ds
-            
+
     def __getitem__(self, idx) :
         ds = []
         for f in self.files:
@@ -210,7 +210,7 @@ class BTFiles :
 
     def __str__(self):
         return '\n'.join(str(f) for f in self.files)
-            
+
 class BTFileManager :
     '''
     '''
@@ -231,15 +231,15 @@ class BTFileManager :
         self.btfiles = BTFiles(metainfo, self.btm.app.save_dir, self.config.downloadList)
         self.bitfieldHave, self.bitfieldNeed = self.btfiles.getBitfield()
         log.msg("Saving to: {0}".format(self.btm.app.save_dir))
-        self.buffer_reserved = {} 
-        self.buffer_max_size = 100 * 2**20 / self.piece_length 
+        self.buffer_reserved = {}
+        self.buffer_max_size = 100 * 2**20 / self.piece_length
 
     def start(self) :
         self.status = 'started'
-        
-        self.buffer = {}        
-        self.buffer_record = [] 
-        self.buffer_dirty = {} 
+
+        self.buffer = {}
+        self.buffer_record = []
+        self.buffer_dirty = {}
 
         reactor.callLater(10, self.deamon_write)
         reactor.callLater(10, self.deamon_read)
@@ -261,7 +261,7 @@ class BTFileManager :
         while self.status == 'started':
             self.__thread_write()
             yield sleep(10)
-    
+
     def __thread_write(self):
         if not hasattr(self, '__thread_write_status') :
             self.__thread_write_status = 'stopped'
@@ -275,7 +275,7 @@ class BTFileManager :
         bfd = self.buffer_dirty.copy()
 
         def call_in_thread():
-            # Writing to disk 
+            # Writing to disk
             for idx in sorted(bfd.keys()) :
                 data = bfd[idx]
                 self.write(idx, data)
@@ -327,7 +327,7 @@ class BTFileManager :
             data = self.readPiece(index)
 
             return data
-            
+
     def writePiece(self, index, piece) :
         if not (0 <= index < self.pieceNum) :
             raise BTFileError('index is out of range')
@@ -363,10 +363,10 @@ class BTFileManager :
 
     def write(self, index, data) :
         ds = self.btfiles.write(index, data)
-        if len(ds) > 1 : 
-            self.buffer_reserved[index] = data 
+        if len(ds) > 1 :
+            self.buffer_reserved[index] = data
         elif not ds :
             assert False
-        
+
     def __iter__(self):
         return self.btfiles.__iter__()

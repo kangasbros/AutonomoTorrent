@@ -16,6 +16,8 @@ from tools import SpeedMonitor, sleep
 from upload import BTUpload
 from download import BTDownload
 
+from debug import debug_print
+
 class BTProtocol(protocol.Protocol):
 
     msg_choke = '\x00'
@@ -52,7 +54,7 @@ class BTProtocol(protocol.Protocol):
         self._next_data_len = self._handle_data.next()
 
         self.preHandshake()
-        
+
     def finishHandshake(self):
         self.btm = self.factory.btm
 
@@ -66,7 +68,7 @@ class BTProtocol(protocol.Protocol):
         self.__downloadMonitor = self.download._downloadMonitor
 
         self.send_bitfield(self.btm.pieceManager.bitfield)
-        
+
         self.send_keep_alive()
 
         if self.btm.connectionManager.isAlreadyConnected(self.peer_id) :
@@ -87,7 +89,7 @@ class BTProtocol(protocol.Protocol):
             del self.upload
             del self.download
             del self.btm
-            
+
         self.factory.removeActiveConnection(self)
 
         self.status = 'stopped'
@@ -106,11 +108,13 @@ class BTProtocol(protocol.Protocol):
     def send_message(self, _type, data):
         self.send_data(_type + data)
 
+        debug_print("sent: %s" % (_type,))
+
         self.__uploadMonitor(_type, data)
 
     def __uploadMonitor(self, _type, data):
         pass
-        
+
     def send_handshake(self):
         info_hash = self.factory.btm.metainfo.info_hash
         my_id = self.factory.btm.my_peer_id
@@ -128,7 +132,7 @@ class BTProtocol(protocol.Protocol):
     def send_choke(self):
         self.am_choke = True
         self.send_data(self.msg_choke)
-        
+
     def send_unchoke(self):
         self.am_choke = False
         self.send_data(self.msg_unchoke)
@@ -154,7 +158,7 @@ class BTProtocol(protocol.Protocol):
             raise TypeError('bitfield should be str or Bitfield')
 
         self.send_message(self.msg_bitfield, data)
-        
+
     def send_request(self, index, begin, length):
         data = struct.pack('!III', index, begin, length)
         self.send_message(self.msg_request, data)
@@ -173,7 +177,7 @@ class BTProtocol(protocol.Protocol):
 
     def __downloadMonitor(self, data):
         pass
-    
+
     def dataReceived(self, data):
         self.__downloadMonitor(data)
 
@@ -186,7 +190,7 @@ class BTProtocol(protocol.Protocol):
 
         self.data = data
         self._next_data_len = nd_len
-        
+
     def handle_data(self):
         protocol = yield ord((yield 1))
         reserved = yield 8
@@ -206,11 +210,12 @@ class BTProtocol(protocol.Protocol):
             else:
                 _type = yield 1
                 self.cur_msg_type = _type
-                
+
                 data = yield (size - 1)
-                
+
                 method_name = 'handle_'+self.msg_type[_type]
                 method = getattr(self, method_name, None)
+                debug_print("got: %s" % (self.msg_type[_type],))
                 if method:
                     method(data)
                 else:
@@ -222,7 +227,8 @@ class BTProtocol(protocol.Protocol):
         self.peer_reserved = reserved
         self.peer_info_hash = info_hash
         self.peer_id = peer_id
-    
+        print "foo"
+
     def handle_keep_alive(self):
         pass
 
@@ -234,7 +240,7 @@ class BTProtocol(protocol.Protocol):
 
     def handle_interested(self, data):
         self.upload._interested(True)
-        
+
     def handle_not_interested(self, data):
         self.upload._interested(False)
 
@@ -249,7 +255,7 @@ class BTProtocol(protocol.Protocol):
     def handle_request(self, data):
         index, begin, length = struct.unpack('!III', data)
         self.upload._request(index, begin, length)
-    
+
     def handle_piece(self, data):
         index, begin = struct.unpack('!II', data[:8])
         piece = data[8:]
