@@ -8,6 +8,7 @@ HOST_ADDRESS_FILE = "~/.autonomotorrent/host_address_mappings"
 class PaymentWatcher(object):
     """docstring for PaymentWatcher"""
 
+'''
     def __init__(self):
         super(PaymentWatcher, self).__init__()
         self.bitcoin_api = AuthServiceProxy("http://%s:%s@127.0.0.1:8332"%("none", "none"))
@@ -19,8 +20,10 @@ class PaymentWatcher(object):
             f.close()
         else:
             self.host_address_mappings = {}
-
+'''
     def get_address_for_host(host):
+        return 'jippii'
+        '''
         if host in self.host_address_mappings.keys():
             return self.host_address_mappings[host]
         # new host, generate address
@@ -31,6 +34,7 @@ class PaymentWatcher(object):
         f.write(json.dumps(self.host_address_mappings))
         f.close()
         return address
+        '''
 
     def has_host_paid(host, amount=0.0001, confirmations=0)
         if host not in self.host_address_mappings.keys():
@@ -45,4 +49,3 @@ class PaymentWatcher(object):
             return 0.0
         recv_amount = bitcoin_api.getreceivedbyaddress(self.host_address_mappings[host], confirmations)
         return recv_amount
-
