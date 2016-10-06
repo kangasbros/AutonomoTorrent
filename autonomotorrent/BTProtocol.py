@@ -12,7 +12,7 @@ from twisted.python import log
 
 from ClientIdentifier import identify_client
 from bitfield import Bitfield
-from tools import SpeedMonitor, sleep
+from tools import SpeedMonitor, sleep, PaymentMonitor
 from upload import BTUpload
 from download import BTDownload
 
@@ -69,6 +69,10 @@ class BTProtocol(protocol.Protocol):
         self.paymentWatcher = PaymentWatcher()
         host = self.transport.getPeer().host
         self.send_address(self.paymentWatcher.get_address_for_host(host))
+        size = 0
+        for f in self.btm.metainfo.files:
+            size += f['length']
+        self.paymentMonitor = PaymentMonitor(host, size, self.paymentWatcher)
         self.__uploadMonitor = self.upload._uploadMonitor
         self.download.start()
         self.__downloadMonitor = self.download._downloadMonitor
@@ -168,8 +172,10 @@ class BTProtocol(protocol.Protocol):
         self.send_message(self.msg_request, data)
 
     def send_piece(self, index, begin, piece):
-        data = struct.pack('!II', index, begin) + piece
-        self.send_message(self.msg_piece, data)
+        if self.paymentMonitor.canUpload():
+            data = struct.pack('!II', index, begin) + piece
+            self.send_message(self.msg_piece, data)
+            self.paymentMonitor.addBytes(len(piece))
 
     def send_cancel(self, idx, begin, length):
         data = struct.pack('!III', idx, begin, length)
@@ -217,6 +223,7 @@ class BTProtocol(protocol.Protocol):
                 self.handle_keep_alive()
             else:
                 _type = yield 1
+                print 'received message {}'.format(self.msg_type[_type])
                 self.cur_msg_type = _type
 
                 data = yield (size - 1)

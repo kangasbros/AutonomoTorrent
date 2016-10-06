@@ -92,3 +92,21 @@ def generate_peer_id():
     assert len(myid) == 20
     return myid
 
+class PaymentMonitor(object):
+
+    def __init__(self, host, size, watcher):
+        self.host = host
+        self.size = size
+        self.free_limit = 0.15
+        self.watcher = watcher
+        self.bytes = 0
+
+    def addBytes(self, bytes):
+        self.bytes += bytes
+
+    def canUpload(self):
+        if self.watcher.has_host_paid(self.host) or \
+                float(self.bytes)/float(self.size) < self.free_limit:
+            return True
+
+        return False
