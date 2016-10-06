@@ -16,7 +16,6 @@ from tools import SpeedMonitor, sleep
 from upload import BTUpload
 from download import BTDownload
 
-from debug import debug_print
 
 from payments import PaymentWatcher
 
@@ -115,8 +114,6 @@ class BTProtocol(protocol.Protocol):
     def send_message(self, _type, data):
         self.send_data(_type + data)
 
-        debug_print("sent: %s" % (_type,))
-
         self.__uploadMonitor(_type, data)
 
     def __uploadMonitor(self, _type, data):
@@ -183,7 +180,7 @@ class BTProtocol(protocol.Protocol):
         self.send_message(self.msg_port, data)
 
     def send_address(self, address):
-        data = struct.pack('!s', address)
+        data = struct.pack('!I', len(address)) + address
         self.send_message(self.msg_address, data)
 
     def __downloadMonitor(self, data):
@@ -282,8 +279,9 @@ class BTProtocol(protocol.Protocol):
             self.btm.connectionManager.handle_port(addr, port)
 
     def handle_address(self, data):
-        address = struct.unpack('!s', data)
-        debug_print("sent: %s" % (address,))
+        add_len = struct.unpack('!I', data[:4])
+        address = data[4:]
+        print address
 
 ############################################################
 class BTClientProtocol (BTProtocol):
