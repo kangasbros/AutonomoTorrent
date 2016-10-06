@@ -45,6 +45,7 @@ setup(
     },
     install_requires = [
         'Twisted >= 10.2',
+        'python-bitcoinrpc'
     ],
     package_data = {
         '': ['*.markdown'],
