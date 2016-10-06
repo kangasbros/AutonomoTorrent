@@ -16,7 +16,8 @@ from tools import SpeedMonitor, sleep
 from upload import BTUpload
 from download import BTDownload
 
-from debug import debug_print
+
+from payments import PaymentWatcher
 
 class BTProtocol(protocol.Protocol):
 
@@ -30,6 +31,7 @@ class BTProtocol(protocol.Protocol):
     msg_piece = '\x07'
     msg_cancel = '\x08'
     msg_port = '\x09'
+    msg_address = '\x0A'
 
     msg_type = {'\x00' : 'choke',
                 '\x01' : 'unchoke',
@@ -40,7 +42,8 @@ class BTProtocol(protocol.Protocol):
                 '\x06' : 'request',
                 '\x07' : 'piece',
                 '\x08' : 'cancel',
-                '\x09' : 'port'}
+                '\x09' : 'port',
+                '\x0A' : 'address'}
 
     def __init__(self):
         self.peer_id = None
@@ -63,6 +66,9 @@ class BTProtocol(protocol.Protocol):
         self.upload = BTUpload(self)
         self.download = BTDownload(self)
         self.upload.start()
+        self.paymentWatcher = PaymentWatcher()
+        host = self.transport.getPeer().host
+        self.send_address(self.paymentWatcher.get_address_for_host(host))
         self.__uploadMonitor = self.upload._uploadMonitor
         self.download.start()
         self.__downloadMonitor = self.download._downloadMonitor
@@ -107,8 +113,6 @@ class BTProtocol(protocol.Protocol):
 
     def send_message(self, _type, data):
         self.send_data(_type + data)
-
-        debug_print("sent: %s" % (_type,))
 
         self.__uploadMonitor(_type, data)
 
@@ -175,6 +179,10 @@ class BTProtocol(protocol.Protocol):
         data = struct.pack('!I', port)
         self.send_message(self.msg_port, data)
 
+    def send_address(self, address):
+        data = struct.pack('!I', len(address)) + address
+        self.send_message(self.msg_address, data)
+
     def __downloadMonitor(self, data):
         pass
 
@@ -215,7 +223,6 @@ class BTProtocol(protocol.Protocol):
 
                 method_name = 'handle_'+self.msg_type[_type]
                 method = getattr(self, method_name, None)
-                debug_print("got: %s" % (self.msg_type[_type],))
                 if method:
                     method(data)
                 else:
@@ -227,7 +234,6 @@ class BTProtocol(protocol.Protocol):
         self.peer_reserved = reserved
         self.peer_info_hash = info_hash
         self.peer_id = peer_id
-        print "foo"
 
     def handle_keep_alive(self):
         pass
@@ -271,6 +277,11 @@ class BTProtocol(protocol.Protocol):
             self.dht_port = port
             addr = self.transport.getPeer().host
             self.btm.connectionManager.handle_port(addr, port)
+
+    def handle_address(self, data):
+        add_len = struct.unpack('!I', data[:4])
+        address = data[4:]
+        print address
 
 ############################################################
 class BTClientProtocol (BTProtocol):
