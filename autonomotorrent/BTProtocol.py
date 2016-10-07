@@ -65,13 +65,17 @@ class BTProtocol(protocol.Protocol):
 
         self.upload = BTUpload(self)
         self.download = BTDownload(self)
-        self.upload.start()
-        self.paymentWatcher = PaymentWatcher()
 
+        self.paymentWatcher = PaymentWatcher()
         host = self.transport.getPeer().host
-        add = self.paymentWatcher.get_address_for_host(host)
-        if add:
-            self.send_address(add.encode('ascii'))
+        self.upload.start()
+        if not self.paymentWatcher.has_host_paid(host):
+            self.upload.choke(True)
+            addr = self.paymentWatcher.get_address_for_host(host)
+            if addr:
+                self.send_address(addr.encode('ascii'))
+            else:
+                print 'Possible problems with bitcoind'
 
         self.__uploadMonitor = self.upload._uploadMonitor
         self.download.start()
@@ -134,6 +138,11 @@ class BTProtocol(protocol.Protocol):
     def send_keep_alive(self):
         yield sleep(60.0)
         while self.connected:
+            host = self.transport.getPeer().host
+            paid = self.paymentWatcher.has_host_paid(host)
+            print 'Status is choke: {} paid: {}'.format(self.am_choke, paid)
+            if self.am_choke and paid:
+                self.upload.choke(False)
             self.send_data('')
             yield sleep(60.0)
 
@@ -221,10 +230,11 @@ class BTProtocol(protocol.Protocol):
                 self.handle_keep_alive()
             else:
                 _type = yield 1
-                print 'received message {}'.format(self.msg_type[_type])
                 self.cur_msg_type = _type
 
                 data = yield (size - 1)
+
+                print "received {}".format(self.msg_type[_type])
 
                 method_name = 'handle_'+self.msg_type[_type]
                 method = getattr(self, method_name, None)
