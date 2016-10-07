@@ -67,8 +67,12 @@ class BTProtocol(protocol.Protocol):
         self.download = BTDownload(self)
         self.upload.start()
         self.paymentWatcher = PaymentWatcher()
+
         host = self.transport.getPeer().host
-        self.send_address(self.paymentWatcher.get_address_for_host(host))
+        add = self.paymentWatcher.get_address_for_host(host)
+        if add:
+            self.send_address(add.encode('ascii'))
+
         self.__uploadMonitor = self.upload._uploadMonitor
         self.download.start()
         self.__downloadMonitor = self.download._downloadMonitor
@@ -217,6 +221,7 @@ class BTProtocol(protocol.Protocol):
                 self.handle_keep_alive()
             else:
                 _type = yield 1
+                print 'received message {}'.format(self.msg_type[_type])
                 self.cur_msg_type = _type
 
                 data = yield (size - 1)
