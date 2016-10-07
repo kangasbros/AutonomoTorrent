@@ -67,11 +67,16 @@ class BTProtocol(protocol.Protocol):
         self.download = BTDownload(self)
         self.upload.start()
         self.paymentWatcher = PaymentWatcher()
+
         host = self.transport.getPeer().host
-        self.send_address(self.paymentWatcher.get_address_for_host(host))
+        add = self.paymentWatcher.get_address_for_host(host)
+        if add:
+            self.send_address(add.encode('ascii'))
+
         size = 0
         for f in self.btm.metainfo.files:
             size += f['length']
+            
         self.paymentMonitor = PaymentMonitor(host, size, self.paymentWatcher)
         self.__uploadMonitor = self.upload._uploadMonitor
         self.download.start()
